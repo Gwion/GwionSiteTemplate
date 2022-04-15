@@ -1,0 +1,39 @@
+name: CI
+
+on:
+  [push, workflow_dispatch, repository_dispatch]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    if: "!contains(github.event.head_commit.message, '[skip ci]')"
+
+    steps:
+    - uses: actions/checkout@v3
+      name: Checkout
+
+    - name: Checkout tools repo
+      uses: actions/checkout@v3
+      with:
+        repository: Gwion/GwionSite
+        path: GwionSite
+
+    - name: GwionSite tools
+      run: bash GwionSite/install.sh
+
+    - name: Dependencies
+      run: bash scripts/update.sh
+
+    - name: MdBook
+      uses: peaceiris/actions-mdbook@v1
+      with:
+         mdbook-version: 'latest'
+
+    - name: Build book
+      run: PATH=$PWD:$PATH make build
+
+    - name: Deploy
+      uses: peaceiris/actions-gh-pages@v3
+      with:
+        github_token: ${{ secrets.GITHUB_TOKEN }}
+        publish_dir: ./book
